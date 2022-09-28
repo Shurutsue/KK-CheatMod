@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Cheat_Mod
+﻿namespace Cheat_Mod
 {
     internal class SessionSettings
     {
@@ -12,5 +6,6 @@ namespace Cheat_Mod
         public bool SetDataOnGrab = false;
         public bool NoEnergyUsage = false;
         public bool NoEggLayingLoss = false;
+        public bool GrabOne = false;
     }
 }

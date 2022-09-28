@@ -2,7 +2,6 @@
 using UnityEngine;
 using Photon.Realtime;
 using Photon.Pun;
-using System;
 using System.Collections.Generic;
 
 namespace Cheat_Mod
@@ -54,6 +53,7 @@ namespace Cheat_Mod
         private void Update()
         {
             if (UnityInput.Current.GetKeyDown("F1")) MainWindowVisible = !MainWindowVisible;
+            if (UnityInput.Current.GetKeyDown(BepInExLoader.GrabOneHotkey.Value)) CurrentSettings.GrabOne = !CurrentSettings.GrabOne;
         }
         // Line function for indication in KoboldEditor
         public static void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)
@@ -128,6 +128,8 @@ namespace Cheat_Mod
 
             #endregion[GUI Styles creation]
 
+            // TODO: A display for the GrabOne setting
+
             if (Event.current.type == EventType.Layout)
             {
                 GUI.backgroundColor = Color.black;
@@ -142,7 +144,12 @@ namespace Cheat_Mod
         {
             // Cheats refresher
             bool MasterClientOrCheatsAllowed = CurrentSettings.CheatsAllowed || PhotonNetwork.CurrentRoom != null && PhotonNetwork.LocalPlayer.IsMasterClient;
-            if (PhotonNetwork.CurrentRoom == null) CurrentSettings = new();
+            if (PhotonNetwork.CurrentRoom == null)
+            {
+                bool GrabOne = CurrentSettings.GrabOne;
+                CurrentSettings = new();
+                CurrentSettings.GrabOne = GrabOne;
+            }
 
             // Return Button in case not the main tab
             if (CurrentTab != 0 && GUILayout.Button("Return")) CurrentTab = 0;

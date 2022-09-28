@@ -2,7 +2,6 @@
 using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
-using UnityEngine.UIElements;
 using Photon.Pun;
 using System;
 
@@ -17,6 +16,7 @@ namespace Cheat_Mod
         public static ConfigEntry<float> ColorG { get; private set; }
         public static ConfigEntry<float> ColorB { get; private set; }
         public static ConfigEntry<float> ColorA { get; private set; }
+        public static ConfigEntry<KeyCode> GrabOneHotkey { get; private set; }
 
         public static GameObject Load { get; private set; }
         private readonly Harmony harmony = new(PluginInfo.PLUGIN_GUID);
@@ -24,6 +24,12 @@ namespace Cheat_Mod
 
         private void Awake()
         {
+            GrabOneHotkey = Config.Bind(
+                "General",
+                "GrabOne_HotKey",
+                KeyCode.H,
+                "Key Code for the hotkey to use."
+                );
             IndicatorLine = Config.Bind(
                 "KoboldEditor.LineIndicator",
                 "Line_Enabled",
@@ -31,25 +37,25 @@ namespace Cheat_Mod
                 "Turn on/off the indicator line"
                 );
             ColorR = Config.Bind(
-                "KoboldEditor",
+                "KoboldEditor.LineIndicator",
                 "LineColor_R",
                 0.75f,
                 "Amount of Red to use in the indicator Line for the Kobold Editor (0-1)"
                 );
             ColorG = Config.Bind(
-                "KoboldEditor",
+                "KoboldEditor.LineIndicator",
                 "LineColor_G",
                 0.75f,
                 "Amount of Green to use in the indicator Line for the Kobold Editor (0-1)"
                 );
             ColorB = Config.Bind(
-                "KoboldEditor",
+                "KoboldEditor.LineIndicator",
                 "LineColor_B",
                 0.2f,
                 "Amount of Blue to use in the indicator Line for the Kobold Editor (0-1)"
                 );
             ColorA = Config.Bind(
-                "KoboldEditor",
+                "KoboldEditor.LineIndicator",
                 "LineColor_A",
                 1f,
                 "Amount of visibility to use in the indicator Line for the Kobold Editor (0-1)"
@@ -71,6 +77,32 @@ namespace Cheat_Mod
 
         }
 
+    }
+
+    [HarmonyPatch(typeof(Grabber), nameof(Grabber.TryGrab))]
+    public class GrabbingPatcher
+    {
+        [HarmonyPrefix]
+        public static bool Prefix(Grabber __instance)
+        {
+            Kobold playerKobold = (Kobold)PhotonNetwork.LocalPlayer.TagObject;
+            if (playerKobold == null) return true;
+            int grabCount = Traverse.Create(__instance).Field("maxGrabCount").GetValue<int>();
+            if (playerKobold == __instance.player)
+            {
+                if (BepInExLoader.Load.GetComponent<CheatMenu>().CurrentSettings.GrabOne)
+                {
+                    __instance.SetMaxGrabCount(1);
+                }
+                else
+                {
+                    __instance.SetMaxGrabCount(playerKobold.GetGenes().grabCount);
+                }
+                return true;
+            }
+            if (__instance.player.GetGenes().grabCount != grabCount) __instance.SetMaxGrabCount(__instance.player.GetGenes().grabCount);
+            return true;
+        }
     }
 
     [HarmonyPatch(typeof(CheatsProcessor), nameof(CheatsProcessor.ProcessCommand), new Type[] {typeof(Kobold), typeof(string)})]
