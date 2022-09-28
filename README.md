@@ -6,8 +6,8 @@ Cheat mod for KoboldKare. Still a mess, but I am learning.
 It will also show a line from the window to the Kobold (You can configure it in the config folder after starting it once with the mod)
 - A Spawn Menu, where you can choose between Prefabs and Reagents.
 - A simple multiplayer protection, requiring the host to allow the usage of the mod for the user<br>
-He can easily do so by typin `!togglemods <PlayerID>` where <PlayerID> would be the user to allow the mods for<br>
-*(He can figure out the ID by typing `/list players`*
+He can easily do so by typing `!togglemods <PlayerID>` where \<PlayerID\> would be the user to allow the mods for<br>
+*(He can figure out the ID by typing `/list players`)*
 
 <br>
 
