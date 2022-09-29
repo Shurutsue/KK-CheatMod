@@ -3,6 +3,7 @@ using UnityEngine;
 using Photon.Realtime;
 using Photon.Pun;
 using System;
+using System.IO;
 using System.Collections.Generic;
 
 namespace Cheat_Mod
@@ -19,6 +20,8 @@ namespace Cheat_Mod
         private byte CurrentTab = 0;
         private byte SubTabReagents = 0;
         private byte SubTabKoboldEditor = 0;
+
+        private Texture2D GrabOneIcon;
 
         // Kobold Editor Data
         private static Texture2D LineTex;
@@ -59,6 +62,16 @@ namespace Cheat_Mod
         private void Start()
         {
             MainWindow = new Rect(Screen.width - Width - 50f, 50f, Width, Height);
+
+            GrabOneIcon = new Texture2D(1,1);
+            byte[] img;
+            using (MemoryStream MS = new MemoryStream())
+            {
+                Properties.Resources.ico_hand_grab_one.Save(MS, System.Drawing.Imaging.ImageFormat.Png);
+                img = MS.ToArray();
+                
+            }
+            GrabOneIcon.LoadImage(img);
         }
 
         private void Update()
@@ -90,8 +103,21 @@ namespace Cheat_Mod
         }
         private void OnGUI()
         {
+            // Grab One Indicator when activated
+            CameraSwitcher CS = GameObject.FindObjectOfType<CameraSwitcher>();
+            if (CurrentSettings.GrabOne && CS != null && GameManager.instance.isPaused == false)
+            {
+                if (CameraSwitcher.CameraMode.FreeCam != CS.mode)
+                {
+                    Rect textureRectangle = new Rect(Screen.width - GrabOneIcon.width - 3, Screen.height / 2 - GrabOneIcon.height / 2, GrabOneIcon.width, GrabOneIcon.height);
+                    GUI.DrawTexture(textureRectangle, GrabOneIcon);
+                    GUIStyle HotkeyIndicatorStyle = new GUIStyle(); HotkeyIndicatorStyle.alignment = TextAnchor.LowerCenter; HotkeyIndicatorStyle.normal.textColor = Color.white;
+                    GUI.Label(textureRectangle, BepInExLoader.GrabOneHotkey.Value.ToString(), HotkeyIndicatorStyle);
+                }
+            }
+
             if (!MainWindowVisible) return;
-            
+
             // Indicating Line for Kobold Selection
             if (CurrentTab == 1 && SelectedKobold != null && BepInExLoader.IndicatorLine.Value && SelectedKobold != (Kobold)PhotonNetwork.LocalPlayer.TagObject)
             {
