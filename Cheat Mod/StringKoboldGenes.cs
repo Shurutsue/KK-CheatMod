@@ -14,6 +14,7 @@ namespace Cheat_Mod
         public string metabCap = "";
         public string hue = "";
         public string brightness = "";
+        public string saturation = "";
         public string dickEquip = "";
         public string dickThickness = "";
         public string grabCount = "";
@@ -31,6 +32,7 @@ namespace Cheat_Mod
             this.metabCap = Convert.ToString(kg.metabolizeCapacitySize);
             this.hue = Convert.ToString(kg.hue);
             this.brightness = Convert.ToString(kg.brightness);
+            this.saturation = Convert.ToString(kg.saturation);
             this.dickEquip = Convert.ToString(kg.dickEquip);
             this.dickThickness = Convert.ToString(kg.dickThickness);
             this.grabCount = Convert.ToString(kg.grabCount);
@@ -49,6 +51,7 @@ namespace Cheat_Mod
             kg.metabolizeCapacitySize = Convert.ToSingle(this.metabCap);
             kg.hue = Convert.ToByte(this.hue);
             kg.brightness = Convert.ToByte(this.brightness);
+            kg.saturation = Convert.ToByte(this.saturation);
             kg.dickEquip = Convert.ToByte(this.dickEquip);
             kg.dickThickness = Convert.ToSingle(this.dickThickness);
             kg.grabCount = Convert.ToByte(this.grabCount);

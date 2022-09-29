@@ -2,6 +2,7 @@
 using UnityEngine;
 using Photon.Realtime;
 using Photon.Pun;
+using System;
 using System.Collections.Generic;
 
 namespace Cheat_Mod
@@ -16,7 +17,8 @@ namespace Cheat_Mod
         private float Width = 250f;
         private float Height = 50f;
         private byte CurrentTab = 0;
-        private byte SubTab = 0;
+        private byte SubTabReagents = 0;
+        private byte SubTabKoboldEditor = 0;
 
         // Kobold Editor Data
         private static Texture2D LineTex;
@@ -26,9 +28,18 @@ namespace Cheat_Mod
         private StringKoboldGenes CurrentGenes;
         private int SelectedKoboldID;
         private bool SelectingKobold = false;
+        //   --  Stomach Editor Data
+        private List<ReagentValues> Reagents = new List<ReagentValues>();
+        private bool SelectingReagent = false;
+        private short ?SelectedReagentID;
+        private string SelectedReagentName = "None";
+        private string SelectedReagentVolume = "";
 
         // Spawn Menu Data
         private float ReagentAmount = 20f;
+        private string ReagentContainer = "Bucket";
+        private string ReagentSearchText = "";
+        private string PrefabSearchText = "";
 
         #region[GUI Styles]
         // Button Styles
@@ -169,6 +180,7 @@ namespace Cheat_Mod
                     GUILayout.Label("Kobold Editor", CenterLabelStyle);
                     GUILayout.Space(10f);
                     GUIStyle style;
+
                     if (!SelectingKobold)
                     {
                         GUILayout.BeginHorizontal();
@@ -216,46 +228,155 @@ namespace Cheat_Mod
                             SelectedKoboldID = (selResult >= 0) ? selResult : 0;
                             SelectedKobold = Kobolds[SelectedKoboldID];
                             CurrentGenes = new StringKoboldGenes(SelectedKobold.GetGenes());
+                            Reagents = new List<ReagentValues>();
+                            foreach (Reagent r in SelectedKobold.bellyContainer.GetContents())
+                            {
+                                if (r.volume > 0f) Reagents.Add(new ReagentValues(r));
+                            }
                             SelectingKobold = false;
                         }
                     }
-                    GUILayout.Space(5f);
-                    KoboldEditorGeneOption("Max Energy", ref CurrentGenes.maxEnergy);
-                    KoboldEditorGeneOption("Base Size", ref CurrentGenes.baseSize);
-                    KoboldEditorGeneOption("Fat Size", ref CurrentGenes.fatSize);
-                    KoboldEditorGeneOption("Ball Size", ref CurrentGenes.ballSize);
-                    KoboldEditorGeneOption("Dick Size", ref CurrentGenes.dickSize);
-                    KoboldEditorGeneOption("Breast Size", ref CurrentGenes.breastSize);
-                    KoboldEditorGeneOption("Belly Size", ref CurrentGenes.bellySize);
-                    KoboldEditorGeneOption("Metab Cap", ref CurrentGenes.metabCap);
-                    KoboldEditorGeneOption("Hue", ref CurrentGenes.hue);
-                    KoboldEditorGeneOption("Brightness", ref CurrentGenes.brightness);
-                    KoboldEditorGeneOption("Dick Equip", ref CurrentGenes.dickEquip);
-                    KoboldEditorGeneOption("Dick Thickness", ref CurrentGenes.dickThickness);
-                    KoboldEditorGeneOption("Grab Count", ref CurrentGenes.grabCount);
-                    GUILayout.Space(5f);
-
-                    bool canUse = SelectedKobold != null && MasterClientOrCheatsAllowed;
-                    bool canUsePV = canUse && SelectedKobold.photonView.IsMine;
-                    style = (canUse) ? GreenButton : RedButton;
-                    GUIStyle stylePV = (canUsePV) ? GreenButton : RedButton;
-                    if (GUILayout.Button("Apply Genes", stylePV) && canUsePV)
-                        CurrentGenes.SetGenes(SelectedKobold);
 
                     GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Cum", style) && canUse)
-                        SelectedKobold.photonView.RPC(nameof(Kobold.Cum), RpcTarget.All);
-                    if (GUILayout.Button("Lactate", style) && canUse)
-                        SelectedKobold.photonView.RPC(nameof(Kobold.MilkRoutine), RpcTarget.All);
+                    if (GUILayout.Button("Gene Editor", (SubTabKoboldEditor == 0) ? EnabledButton : DisabledButton)) SubTabKoboldEditor = 0;
+                    if (GUILayout.Button("Stomach Editor", (SubTabKoboldEditor == 1) ? EnabledButton : DisabledButton)) SubTabKoboldEditor = 1;
                     GUILayout.EndHorizontal();
 
-                    GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Clear Stomach", style) && canUse)
-                        SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.Spill), RpcTarget.All, SelectedKobold.bellyContainer.volume);
-                    if (GUILayout.Button("Clear Metabolism", stylePV) && canUsePV)
-                        SelectedKobold.metabolizedContents.Spill(SelectedKobold.metabolizedContents.volume);
-                    GUILayout.EndHorizontal();
-                    #endregion
+                    switch (SubTabKoboldEditor)
+                    {
+                        case 0:
+                            #region[Kobold Editor - Gene Editor]
+                            GUILayout.Space(5f);
+                            KoboldEditorGeneOption("Max Energy", ref CurrentGenes.maxEnergy);
+                            KoboldEditorGeneOption("Base Size", ref CurrentGenes.baseSize);
+                            KoboldEditorGeneOption("Fat Size", ref CurrentGenes.fatSize);
+                            KoboldEditorGeneOption("Ball Size", ref CurrentGenes.ballSize);
+                            KoboldEditorGeneOption("Dick Size", ref CurrentGenes.dickSize);
+                            KoboldEditorGeneOption("Breast Size", ref CurrentGenes.breastSize);
+                            KoboldEditorGeneOption("Belly Size", ref CurrentGenes.bellySize);
+                            KoboldEditorGeneOption("Metab Cap", ref CurrentGenes.metabCap);
+                            KoboldEditorGeneOption("Hue", ref CurrentGenes.hue);
+                            KoboldEditorGeneOption("Brightness", ref CurrentGenes.brightness);
+                            KoboldEditorGeneOption("Saturation", ref CurrentGenes.saturation);
+                            KoboldEditorGeneOption("Dick Equip", ref CurrentGenes.dickEquip);
+                            KoboldEditorGeneOption("Dick Thickness", ref CurrentGenes.dickThickness);
+                            KoboldEditorGeneOption("Grab Count", ref CurrentGenes.grabCount);
+                            GUILayout.Space(5f);
+
+                            bool canUse = SelectedKobold != null && MasterClientOrCheatsAllowed;
+                            bool canUsePV = canUse && SelectedKobold.photonView.IsMine;
+                            style = (canUse) ? GreenButton : RedButton;
+                            GUIStyle stylePV = (canUsePV) ? GreenButton : RedButton;
+                            if (GUILayout.Button("Apply Genes", stylePV) && canUsePV)
+                                CurrentGenes.SetGenes(SelectedKobold);
+
+                            GUILayout.BeginHorizontal();
+                            if (GUILayout.Button("Cum", style) && canUse)
+                                SelectedKobold.photonView.RPC(nameof(Kobold.Cum), RpcTarget.All);
+                            if (GUILayout.Button("Lactate", style) && canUse)
+                                SelectedKobold.photonView.RPC(nameof(Kobold.MilkRoutine), RpcTarget.All);
+                            GUILayout.EndHorizontal();
+
+                            GUILayout.BeginHorizontal();
+                            if (GUILayout.Button("Clear Stomach", style) && canUse)
+                                SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.Spill), RpcTarget.All, SelectedKobold.bellyContainer.volume);
+                            if (GUILayout.Button("Clear Metabolism", stylePV) && canUsePV)
+                                SelectedKobold.metabolizedContents.Spill(SelectedKobold.metabolizedContents.volume);
+                            GUILayout.EndHorizontal();
+                            #endregion[Kobold Editor - Gene Editor]
+                            break;
+                        case 1:
+                            #region[Kobold Editor - Stomach Editor]
+                            if (!SelectingReagent)
+                            {
+                                string selectedReagent = (SelectedReagentID == null) ? "None" : $"[{SelectedReagentID}] {SelectedReagentName}:";
+                                GUILayout.BeginHorizontal();
+                                GUILayout.Label($"Selected:\n{selectedReagent}");
+                                if (GUILayout.Button("Select")) SelectingReagent = true;
+                                GUILayout.EndHorizontal();
+                                GUILayout.BeginHorizontal();
+                                GUILayout.Label("Volume:", GUILayout.Width(60f));
+                                SelectedReagentVolume = GUILayout.TextField(SelectedReagentVolume);
+                                GUILayout.EndHorizontal();
+                                GUILayout.BeginHorizontal();
+                                if (GUILayout.Button("Add Reagent") && SelectedReagentID != null)
+                                {
+                                    try
+                                    {   // In Try catch block due to conversion
+                                        short nid = (short)SelectedReagentID;
+                                        float vol = Convert.ToSingle(SelectedReagentVolume);
+                                        Reagents.Add(new ReagentValues(vol, SelectedReagentName, nid));
+                                    }
+                                    catch { SelectedReagentVolume = $"Invalid Input [{SelectedReagentVolume}]"; }
+                                }
+                                if (GUILayout.Button("Clear Reagents")) Reagents = new List<ReagentValues>();
+                                GUILayout.EndHorizontal();
+                            }
+                            else
+                            {
+                                GUILayout.Label("Selecting Reagent");
+                                GUILayout.BeginHorizontal();
+                                GUILayout.Label("Search:");
+                                ReagentSearchText = GUILayout.TextField(ReagentSearchText);
+                                GUILayout.EndHorizontal();
+                                List<ScriptableReagent> AvailableReagents = ReagentDatabase.GetReagents();
+                                ScrollPosition = GUILayout.BeginScrollView(ScrollPosition, GUILayout.Height(100f));
+                                foreach(ScriptableReagent r in AvailableReagents)
+                                {
+                                    if (r.name.ToLower().Contains(ReagentSearchText.ToLower()) && GUILayout.Button(r.name)) { SelectingReagent = false; SelectedReagentID = ReagentDatabase.GetID(r); SelectedReagentName = r.name; }
+                                }
+                                GUILayout.EndScrollView();
+                            }
+                            
+                            GUILayout.Space(5f);
+                            List<ReagentValues> reagentsToRemove = new List<ReagentValues>();
+                            foreach (ReagentValues r in Reagents)
+                            {
+                                GUILayout.BeginHorizontal();
+                                GUILayout.Label($"[{r.id}] {r.name}: {r.volume}");
+                                if (GUILayout.Button("Remove")) reagentsToRemove.Add(r);
+                                GUILayout.EndHorizontal();
+                            }
+                            //Enumeration fix
+                            foreach (ReagentValues r in reagentsToRemove) Reagents.Remove(r);
+                            GUILayout.Space(5f);
+                            GUILayout.BeginHorizontal();
+                            canUse = SelectedKobold != null && MasterClientOrCheatsAllowed;
+                            style = (canUse) ? GreenButton : RedButton;
+                            if (GUILayout.Button("Set Stomach", style) && canUse)
+                            {
+                                SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.Spill), RpcTarget.All, SelectedKobold.bellyContainer.volume);
+                                ReagentContents reagentContents = new ReagentContents();
+                                foreach(ReagentValues r in Reagents)
+                                {
+                                    Reagent newReagent = new Reagent() { id = r.id, volume = r.volume };
+                                    reagentContents.AddMix(newReagent);
+                                }
+                                SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.AddMixRPC), RpcTarget.All, reagentContents, -1);
+                            }
+                            if (GUILayout.Button("Force Set Stomach", style) && canUse)
+                            {
+                                SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.Spill), RpcTarget.All, SelectedKobold.bellyContainer.volume);
+                                ReagentContents reagentContents = new ReagentContents();
+                                foreach (ReagentValues r in Reagents)
+                                {
+                                    Reagent newReagent = new Reagent() { id = r.id, volume = r.volume };
+                                    reagentContents.AddMix(newReagent);
+                                }
+                                SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.ForceMixRPC), RpcTarget.All, reagentContents, -1);
+                            }
+                            GUILayout.EndHorizontal();
+                            if (GUILayout.Button("Clear Stomach", style) && canUse)
+                                SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.Spill), RpcTarget.All, SelectedKobold.bellyContainer.volume);
+                            #endregion[Kobold Editor - Stomach Editor]
+                            break;
+                        default:
+                            SubTabKoboldEditor = 0;
+                            break;
+                    }
+
+                    
+                    #endregion[Kobold Editor]
                     break;
                 case 2:
                     #region [About]
@@ -267,18 +388,24 @@ namespace Cheat_Mod
                     GUILayout.Label("Spawn Menu", CenterLabelStyle);
                     GUILayout.Space(10f);
                     GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Prefabs", (SubTab == 0) ? EnabledButton : DisabledButton) && true) SubTab = 0;
-                    if (GUILayout.Button("Reagents", (SubTab == 1) ? EnabledButton : DisabledButton) && true) SubTab = 1;
+                    if (GUILayout.Button("Prefabs", (SubTabReagents == 0) ? EnabledButton : DisabledButton) && true) SubTabReagents = 0;
+                    if (GUILayout.Button("Reagents", (SubTabReagents == 1) ? EnabledButton : DisabledButton) && true) SubTabReagents = 1;
                     GUILayout.EndHorizontal();
-                    switch (SubTab)
+                    DefaultPool pool = PhotonNetwork.PrefabPool as DefaultPool;
+                    
+                    switch (SubTabReagents)
                     {
                         case 0:
-                            DefaultPool pool = PhotonNetwork.PrefabPool as DefaultPool;
+                            ;
                             if (pool == null) break;
+                            GUILayout.BeginHorizontal();
+                            GUILayout.Label("Search:");
+                            PrefabSearchText = GUILayout.TextField(PrefabSearchText);
+                            GUILayout.EndHorizontal();
                             ScrollPosition = GUILayout.BeginScrollView(ScrollPosition, GUILayout.Height(100));
                             foreach (var kVPair in pool.ResourceCache)
                             {
-                                if (GUILayout.Button(kVPair.Key, (MasterClientOrCheatsAllowed) ? EnabledButton : DisabledButton) && MasterClientOrCheatsAllowed) {
+                                if (kVPair.Key.ToLower().Contains(PrefabSearchText.ToLower()) && GUILayout.Button(kVPair.Key, (PhotonNetwork.IsMasterClient) ? EnabledButton : DisabledButton) && PhotonNetwork.IsMasterClient) {
                                     Kobold curKobold = (Kobold)PhotonNetwork.LocalPlayer.TagObject;
                                     if(curKobold != null)
                                     {
@@ -298,17 +425,27 @@ namespace Cheat_Mod
                             GUILayout.Label(Mathf.Floor(ReagentAmount).ToString(), GUILayout.Width(30f));
                             ReagentAmount = GUILayout.HorizontalSlider(ReagentAmount, 0, 1000);
                             GUILayout.EndHorizontal();
+                            GUILayout.Label("Reagent Container to use:");
+                            GUILayout.BeginHorizontal();
+                            if (pool.ResourceCache.ContainsKey("Bucket") && GUILayout.Button("Bucket", (ReagentContainer == "Bucket") ? EnabledButton : DisabledButton)) ReagentContainer = "Bucket";
+                            if (pool.ResourceCache.ContainsKey("Trough") && GUILayout.Button("Trough", (ReagentContainer == "Trough") ? EnabledButton : DisabledButton)) ReagentContainer = "Trough";
+                            if (pool.ResourceCache.ContainsKey("WateringCan") && GUILayout.Button("Watering Can", (ReagentContainer == "WateringCan") ? EnabledButton : DisabledButton)) ReagentContainer = "WateringCan";
+                            GUILayout.EndHorizontal();
                             GUILayout.Space(5f);
+                            GUILayout.BeginHorizontal();
+                            GUILayout.Label("Search:");
+                            ReagentSearchText = GUILayout.TextField(ReagentSearchText);
+                            GUILayout.EndHorizontal();
                             ScrollPosition = GUILayout.BeginScrollView(ScrollPosition, GUILayout.Height(100));
                             foreach(var reagent in Reagents)
                             {
-                                if (GUILayout.Button(reagent.name, (MasterClientOrCheatsAllowed) ? EnabledButton : DisabledButton) && MasterClientOrCheatsAllowed)
+                                if (reagent.name.ToLower().Contains(ReagentSearchText.ToLower()) && GUILayout.Button(reagent.name, (PhotonNetwork.IsMasterClient) ? EnabledButton : DisabledButton) && PhotonNetwork.IsMasterClient)
                                 {
                                     Kobold curKobold = (Kobold)PhotonNetwork.LocalPlayer.TagObject;
-                                    if (curKobold != null)
+                                    if (curKobold != null && pool.ResourceCache.ContainsKey(ReagentContainer))
                                     {
                                         var kT = curKobold.hip.transform;
-                                        GameObject obj = PhotonNetwork.InstantiateRoomObject("Bucket", kT.position + kT.forward, Quaternion.identity);
+                                        GameObject obj = PhotonNetwork.InstantiateRoomObject(ReagentContainer, kT.position + kT.forward, Quaternion.identity);
                                         ReagentContents contents = new();
                                         contents.AddMix(ReagentDatabase.GetReagent(reagent.name).GetReagent(ReagentAmount));
                                         obj.GetPhotonView().RPC(nameof(GenericReagentContainer.ForceMixRPC), RpcTarget.All, contents, curKobold.photonView.ViewID);
@@ -320,7 +457,7 @@ namespace Cheat_Mod
                             GUILayout.EndScrollView();
                             break;
                         default:
-                            SubTab = 0;
+                            SubTabReagents = 0;
                             break;
                     }
                     #endregion

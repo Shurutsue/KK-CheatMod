@@ -17,6 +17,7 @@ namespace Cheat_Mod
         public static ConfigEntry<float> ColorB { get; private set; }
         public static ConfigEntry<float> ColorA { get; private set; }
         public static ConfigEntry<KeyCode> GrabOneHotkey { get; private set; }
+        public static ConfigEntry<KeyCode> ShowHideHotkey { get; private set; }
 
         public static GameObject Load { get; private set; }
         private readonly Harmony harmony = new(PluginInfo.PLUGIN_GUID);
@@ -24,6 +25,12 @@ namespace Cheat_Mod
 
         private void Awake()
         {
+            ShowHideHotkey = Config.Bind(
+                "General",
+                "ShowHide_HotKey",
+                KeyCode.F1,
+                "Key Code for the hotkey to use."
+                );
             GrabOneHotkey = Config.Bind(
                 "General",
                 "GrabOne_HotKey",
