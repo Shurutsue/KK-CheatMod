@@ -18,6 +18,7 @@ namespace Cheat_Mod
         public static ConfigEntry<float> ColorA { get; private set; }
         public static ConfigEntry<KeyCode> GrabOneHotkey { get; private set; }
         public static ConfigEntry<KeyCode> ShowHideHotkey { get; private set; }
+        //public static ConfigEntry<bool> CursorWhenVisible { get; private set; }
 
         public static GameObject Load { get; private set; }
         private readonly Harmony harmony = new(PluginInfo.PLUGIN_GUID);
@@ -25,6 +26,13 @@ namespace Cheat_Mod
 
         private void Awake()
         {
+            #region[Config Binds]
+            /*CursorWhenVisible = Config.Bind(
+                "General",
+                "CursorWhenVisible",
+                true,
+                "Force cursor being available when menu is visible."
+                );*/
             ShowHideHotkey = Config.Bind(
                 "General",
                 "ShowHide_HotKey",
@@ -67,7 +75,7 @@ namespace Cheat_Mod
                 1f,
                 "Amount of visibility to use in the indicator Line for the Kobold Editor (0-1)"
                 );
-
+            #endregion[Config Binds]
 
             // Plugin startup logic
             harmony.PatchAll();

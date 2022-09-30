@@ -5,6 +5,8 @@ using Photon.Pun;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
+
 
 namespace Cheat_Mod
 {
@@ -22,6 +24,7 @@ namespace Cheat_Mod
         private byte SubTabKoboldEditor = 0;
 
         private Texture2D GrabOneIcon;
+        private Texture2D GrabNormalIcon;
 
         // Kobold Editor Data
         private static Texture2D LineTex;
@@ -32,7 +35,7 @@ namespace Cheat_Mod
         private int SelectedKoboldID;
         private bool SelectingKobold = false;
         //   --  Stomach Editor Data
-        private List<ReagentValues> Reagents = new List<ReagentValues>();
+        private List<ReagentValues> Reagents = new();
         private bool SelectingReagent = false;
         private short ?SelectedReagentID;
         private string SelectedReagentName = "None";
@@ -59,23 +62,48 @@ namespace Cheat_Mod
         private GUIStyle TitleStyle;
         #endregion[GUI Styles]
 
+        private Texture2D LoadImageFromResources(System.Drawing.Bitmap bitmap, System.Drawing.Imaging.ImageFormat imageFormat)
+        {
+            Texture2D texture = new(1,1);
+            byte[] imgBytes;
+            using (MemoryStream ms = new())
+            {
+                bitmap.Save(ms, imageFormat);
+                imgBytes = ms.ToArray();
+            }
+            texture.LoadImage(imgBytes);
+            return texture;
+        }
+
         private void Start()
         {
             MainWindow = new Rect(Screen.width - Width - 50f, 50f, Width, Height);
-
-            GrabOneIcon = new Texture2D(1,1);
-            byte[] img;
-            using (MemoryStream MS = new MemoryStream())
-            {
-                Properties.Resources.ico_hand_grab_one.Save(MS, System.Drawing.Imaging.ImageFormat.Png);
-                img = MS.ToArray();
-                
-            }
-            GrabOneIcon.LoadImage(img);
+            // Load Images
+            var format = System.Drawing.Imaging.ImageFormat.Png;
+            GrabOneIcon = LoadImageFromResources(Properties.Resources.ico_hand_grab_one, format);
+            GrabNormalIcon = LoadImageFromResources(Properties.Resources.ico_hand_grab_normal, format);
         }
 
         private void Update()
         {
+            /* -------------------------------------
+             *  Requires work. Need to remove the ability to switch cameras for example.
+             * -------------------------------------
+             * 
+            if (BepInExLoader.CursorWhenVisible.Value && MainWindowVisible)
+            {
+                if (Cursor.lockState == CursorLockMode.Locked)
+                {
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                }
+            }
+            else if (BepInExLoader.CursorWhenVisible.Value && !GameManager.instance.isPaused && Cursor.lockState == CursorLockMode.None && SceneManager.GetActiveScene().name != "MainMenu")
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+            */
             if (UnityInput.Current.GetKeyDown("F1")) MainWindowVisible = !MainWindowVisible;
             if (UnityInput.Current.GetKeyDown(BepInExLoader.GrabOneHotkey.Value)) CurrentSettings.GrabOne = !CurrentSettings.GrabOne;
         }
@@ -105,13 +133,16 @@ namespace Cheat_Mod
         {
             // Grab One Indicator when activated
             CameraSwitcher CS = GameObject.FindObjectOfType<CameraSwitcher>();
-            if (CurrentSettings.GrabOne && CS != null && GameManager.instance.isPaused == false)
+            if (CS != null && GameManager.instance.isPaused == false)
             {
                 if (CameraSwitcher.CameraMode.FreeCam != CS.mode)
                 {
-                    Rect textureRectangle = new Rect(Screen.width - GrabOneIcon.width - 3, Screen.height / 2 - GrabOneIcon.height / 2, GrabOneIcon.width, GrabOneIcon.height);
-                    GUI.DrawTexture(textureRectangle, GrabOneIcon);
-                    GUIStyle HotkeyIndicatorStyle = new GUIStyle(); HotkeyIndicatorStyle.alignment = TextAnchor.LowerCenter; HotkeyIndicatorStyle.normal.textColor = Color.white;
+                    Rect textureRectangle = new(Screen.width - GrabOneIcon.width - 3, Screen.height / 2 - GrabOneIcon.height / 2, GrabOneIcon.width, GrabOneIcon.height);
+                    if(CurrentSettings.GrabOne)
+                        GUI.DrawTexture(textureRectangle, GrabOneIcon);
+                    else
+                        GUI.DrawTexture(textureRectangle, GrabNormalIcon);
+                    GUIStyle HotkeyIndicatorStyle = new(); HotkeyIndicatorStyle.alignment = TextAnchor.LowerCenter; HotkeyIndicatorStyle.normal.textColor = Color.white;
                     GUI.Label(textureRectangle, BepInExLoader.GrabOneHotkey.Value.ToString(), HotkeyIndicatorStyle);
                 }
             }
@@ -262,7 +293,6 @@ namespace Cheat_Mod
                             SelectingKobold = false;
                         }
                     }
-
                     GUILayout.BeginHorizontal();
                     if (GUILayout.Button("Gene Editor", (SubTabKoboldEditor == 0) ? EnabledButton : DisabledButton)) SubTabKoboldEditor = 0;
                     if (GUILayout.Button("Stomach Editor", (SubTabKoboldEditor == 1) ? EnabledButton : DisabledButton)) SubTabKoboldEditor = 1;
@@ -355,12 +385,12 @@ namespace Cheat_Mod
                             }
                             
                             GUILayout.Space(5f);
-                            List<ReagentValues> reagentsToRemove = new List<ReagentValues>();
+                            List<ReagentValues> reagentsToRemove = new();
                             foreach (ReagentValues r in Reagents)
                             {
                                 GUILayout.BeginHorizontal();
-                                GUILayout.Label($"[{r.id}] {r.name}: {r.volume}");
-                                if (GUILayout.Button("Remove")) reagentsToRemove.Add(r);
+                                GUILayout.Label($"[{r.ID}] {r.Name}: {r.Volume}");
+                                if (GUILayout.Button("Remove", GUILayout.Width(75f))) reagentsToRemove.Add(r);
                                 GUILayout.EndHorizontal();
                             }
                             //Enumeration fix
@@ -372,10 +402,10 @@ namespace Cheat_Mod
                             if (GUILayout.Button("Set Stomach", style) && canUse)
                             {
                                 SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.Spill), RpcTarget.All, SelectedKobold.bellyContainer.volume);
-                                ReagentContents reagentContents = new ReagentContents();
+                                ReagentContents reagentContents = new();
                                 foreach(ReagentValues r in Reagents)
                                 {
-                                    Reagent newReagent = new Reagent() { id = r.id, volume = r.volume };
+                                    Reagent newReagent = new() { id = r.ID, volume = r.Volume };
                                     reagentContents.AddMix(newReagent);
                                 }
                                 SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.AddMixRPC), RpcTarget.All, reagentContents, -1);
@@ -383,10 +413,10 @@ namespace Cheat_Mod
                             if (GUILayout.Button("Force Set Stomach", style) && canUse)
                             {
                                 SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.Spill), RpcTarget.All, SelectedKobold.bellyContainer.volume);
-                                ReagentContents reagentContents = new ReagentContents();
+                                ReagentContents reagentContents = new();
                                 foreach (ReagentValues r in Reagents)
                                 {
-                                    Reagent newReagent = new Reagent() { id = r.id, volume = r.volume };
+                                    Reagent newReagent = new() { id = r.ID, volume = r.Volume };
                                     reagentContents.AddMix(newReagent);
                                 }
                                 SelectedKobold.photonView.RPC(nameof(GenericReagentContainer.ForceMixRPC), RpcTarget.All, reagentContents, -1);
@@ -422,7 +452,6 @@ namespace Cheat_Mod
                     switch (SubTabReagents)
                     {
                         case 0:
-                            ;
                             if (pool == null) break;
                             GUILayout.BeginHorizontal();
                             GUILayout.Label("Search:");
@@ -431,9 +460,10 @@ namespace Cheat_Mod
                             ScrollPosition = GUILayout.BeginScrollView(ScrollPosition, GUILayout.Height(100));
                             foreach (var kVPair in pool.ResourceCache)
                             {
-                                if (kVPair.Key.ToLower().Contains(PrefabSearchText.ToLower()) && GUILayout.Button(kVPair.Key, (PhotonNetwork.IsMasterClient) ? EnabledButton : DisabledButton) && PhotonNetwork.IsMasterClient) {
+                                if (kVPair.Key.ToLower().Contains(PrefabSearchText.ToLower()) && GUILayout.Button(kVPair.Key, (PhotonNetwork.IsMasterClient) ? EnabledButton : DisabledButton) && PhotonNetwork.IsMasterClient)
+                                {
                                     Kobold curKobold = (Kobold)PhotonNetwork.LocalPlayer.TagObject;
-                                    if(curKobold != null)
+                                    if (curKobold != null)
                                     {
                                         var kT = curKobold.hip.transform;
                                         PhotonNetwork.InstantiateRoomObject(kVPair.Key, kT.position + kT.forward, Quaternion.identity);
@@ -463,7 +493,7 @@ namespace Cheat_Mod
                             ReagentSearchText = GUILayout.TextField(ReagentSearchText);
                             GUILayout.EndHorizontal();
                             ScrollPosition = GUILayout.BeginScrollView(ScrollPosition, GUILayout.Height(100));
-                            foreach(var reagent in Reagents)
+                            foreach (var reagent in Reagents)
                             {
                                 if (reagent.name.ToLower().Contains(ReagentSearchText.ToLower()) && GUILayout.Button(reagent.name, (PhotonNetwork.IsMasterClient) ? EnabledButton : DisabledButton) && PhotonNetwork.IsMasterClient)
                                 {
@@ -503,7 +533,7 @@ namespace Cheat_Mod
         private void KoboldEditorGeneOption(string Label, ref string value)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(Label);
+            GUILayout.Label(Label, GUILayout.Width(90f));
             value = GUILayout.TextField(value);
             GUILayout.EndHorizontal();
         }

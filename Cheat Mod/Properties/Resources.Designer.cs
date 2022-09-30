@@ -63,6 +63,16 @@ namespace Cheat_Mod.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap ico_hand_grab_normal {
+            get {
+                object obj = ResourceManager.GetObject("ico_hand_grab_normal", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap ico_hand_grab_one {
             get {
                 object obj = ResourceManager.GetObject("ico_hand_grab_one", resourceCulture);

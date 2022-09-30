@@ -4,7 +4,7 @@
     <TargetFramework>net46</TargetFramework>
     <AssemblyName>Cheat_Mod</AssemblyName>
     <Description>Cheat Mod for KoboldKare</Description>
-    <Version>0.9.1</Version>
+    <Version>0.9.2</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
